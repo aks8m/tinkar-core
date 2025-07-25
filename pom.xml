@@ -57,6 +57,7 @@
         <module>integration</module>
         <module>aggregator</module>
         <module>events</module>
+	    <module>provider/data-rocksdb-provider</module>
     </modules>
 
     <scm>
@@ -106,6 +107,7 @@
         <common-java5.version>3.5.3</common-java5.version>
         <fasterxml-jackson-core.version>2.19.0</fasterxml-jackson-core.version>
         <activej-launchers.version>4.3.1</activej-launchers.version>
+        <rocksdbjni.version>10.2.1</rocksdbjni.version>
 
         <!-- JPMS Dependencies -->
         <tinkar-jpms-deps.groupId>dev.ikm.jpms</tinkar-jpms-deps.groupId>
@@ -481,6 +483,12 @@
 				<artifactId>elk-snomed-test</artifactId>
 				<version>${ikm-reasoner.version}</version>
 			</dependency>
+
+            <dependency>
+                <groupId>org.rocksdb</groupId>
+                <artifactId>rocksdbjni</artifactId>
+                <version>${rocksdbjni.version}</version>
+            </dependency>
 		</dependencies>
     </dependencyManagement>
     <!-- Cross project dependencies -->
