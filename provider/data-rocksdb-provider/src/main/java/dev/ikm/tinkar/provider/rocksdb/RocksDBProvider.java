@@ -333,7 +333,66 @@ public class RocksDBProvider implements PrimitiveDataService, NidGenerator {
 			default -> throw new IllegalArgumentException("Unsupported sourceObject: " + sourceObject);
 		};
 
-		//Write additional
+		if (patternNid != Integer.MAX_VALUE) {
+			//Write additional citations data (Component -> Semantic, Pattern
+			Citation citation = new Citation(nid, patternNid);
+			byte[] nidKey = convert.integerToBytes(referencedComponentNid);
+			byte[] existingCitationBytes;
+			byte[] newCitationsBytes;
+			try {
+				existingCitationBytes = rocksDB.get(handle(ColumnFamily.COMPONENT_NID_TO_CITATION_MAP), nidKey);
+			} catch (RocksDBException e) {
+				throw new RuntimeException(e);
+			}
+			if (existingCitationBytes != null) {
+				Citation[] existingCitations = convert.bytesToCitationArray(existingCitationBytes);
+				Citation[] newCitations = new Citation[existingCitations.length + 1];
+				System.arraycopy(existingCitations, 0, newCitations, 0, existingCitations.length);
+				newCitations[newCitations.length - 1] = citation;
+				newCitationsBytes = convert.citationArrayToBytes(newCitations);
+				try {
+					rocksDB.put(handle(ColumnFamily.COMPONENT_NID_TO_CITATION_MAP), nidKey, newCitationsBytes);
+				} catch (RocksDBException e) {
+					throw new RuntimeException(e);
+				}
+			} else {
+				Citation[] newCitations = new Citation[1];
+				newCitations[0] = citation;
+				newCitationsBytes = convert.citationArrayToBytes(newCitations);
+
+			}
+			try {
+				rocksDB.put(handle(ColumnFamily.COMPONENT_NID_TO_CITATION_MAP), nidKey, newCitationsBytes);
+			} catch (RocksDBException e) {
+				throw new RuntimeException(e);
+			}
+
+			//Write/Update Mapping of Semantics to their Patterns
+			byte[] patternKey = convert.integerToBytes(patternNid);
+			byte[] existingSemanticNidsBytes;
+			byte[] newSemanticNidsBytes;
+			try {
+				existingSemanticNidsBytes = rocksDB.get(handle(ColumnFamily.PATTERN_NID_TO_SEMANTIC_NIDS_MAP), patternKey);
+			} catch (RocksDBException e) {
+				throw new RuntimeException(e);
+			}
+			if (existingSemanticNidsBytes != null) {
+				int[] existingSemanticNids = convert.bytesToIntArray(existingSemanticNidsBytes);
+				int[] newSemanticNids = new int[existingSemanticNids.length + 1];
+				System.arraycopy(existingSemanticNids, 0, newSemanticNids, 0, existingSemanticNids.length);
+				newSemanticNids[newSemanticNids.length - 1] = nid;
+				newSemanticNidsBytes = convert.intArrayToBytes(newSemanticNids);
+			} else {
+				int[] newSemanticNids = new int[1];
+				newSemanticNids[0] = nid;
+				newSemanticNidsBytes = convert.intArrayToBytes(newSemanticNids);
+			}
+			try {
+				rocksDB.put(handle(ColumnFamily.PATTERN_NID_TO_SEMANTIC_NIDS_MAP), patternKey, newSemanticNidsBytes);
+			} catch (RocksDBException e) {
+				throw new RuntimeException(e);
+			}
+		}
 
 		writeSequence.increment();
 		this.indexer.index(sourceObject);
@@ -378,14 +437,14 @@ public class RocksDBProvider implements PrimitiveDataService, NidGenerator {
 	@Override
 	public void forEachSemanticNidOfPattern(int patternNid, IntProcedure procedure) {
 		byte[] key = convert.integerToBytes(patternNid);
-		boolean isPattern = rocksDB.keyExists(handle(ColumnFamily.NID_TO_SEMANTIC_NIDS_MAP), key);
+		boolean isPattern = rocksDB.keyExists(handle(ColumnFamily.PATTERN_NID_TO_SEMANTIC_NIDS_MAP), key);
 
 		if (!isPattern) {
 			throw new IllegalStateException("Trying to iterate elements for entity that is not a pattern: " + patternNid);
 		}
 		byte[] semanticNidsBytes;
 		try {
-			semanticNidsBytes = rocksDB.get(handle(ColumnFamily.NID_TO_SEMANTIC_NIDS_MAP), key);
+			semanticNidsBytes = rocksDB.get(handle(ColumnFamily.PATTERN_NID_TO_SEMANTIC_NIDS_MAP), key);
 		} catch (RocksDBException e) {
 			throw new RuntimeException(e);
 		}
@@ -434,7 +493,7 @@ public class RocksDBProvider implements PrimitiveDataService, NidGenerator {
 		byte[] key = convert.integerToBytes(componentNid);
 		byte[] citationArrayBytes;
 		try {
-			citationArrayBytes = rocksDB.get(handle(ColumnFamily.NID_TO_CITATION_MAP), key);
+			citationArrayBytes = rocksDB.get(handle(ColumnFamily.COMPONENT_NID_TO_CITATION_MAP), key);
 		} catch (RocksDBException e) {
 			throw new RuntimeException(e);
 		}
@@ -451,7 +510,7 @@ public class RocksDBProvider implements PrimitiveDataService, NidGenerator {
 		byte[] key = convert.integerToBytes(componentNid);
 		byte[] citationArrayBytes;
 		try {
-			citationArrayBytes = rocksDB.get(handle(ColumnFamily.NID_TO_CITATION_MAP), key);
+			citationArrayBytes = rocksDB.get(handle(ColumnFamily.COMPONENT_NID_TO_CITATION_MAP), key);
 		} catch (RocksDBException e) {
 			throw new RuntimeException(e);
 		}

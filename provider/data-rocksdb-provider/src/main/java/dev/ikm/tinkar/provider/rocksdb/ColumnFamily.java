@@ -7,8 +7,8 @@ public enum ColumnFamily {
 	NID_TO_PATTERN_MAP(3, "nid-to-pattern-map"),
 	NID_TO_STAMP_MAP(4, "nid-to-stamp-map"),
 	UUID_TO_NID_MAP(5, "uuid-to-nid-map"),
-	NID_TO_CITATION_MAP(6, "nid-to-citation-map"),
-	NID_TO_SEMANTIC_NIDS_MAP(7, "nid-to-semantic-nids-map");
+	COMPONENT_NID_TO_CITATION_MAP(6, "component-nid-to-citation-map"),
+	PATTERN_NID_TO_SEMANTIC_NIDS_MAP(7, "nid-to-semantic-nids-map");
 
 
 	private final int index;
