@@ -70,6 +70,7 @@ public class RocksDBProvider implements PrimitiveDataService, NidGenerator {
 		//Get rocksdb database directory and create if necessary
 		File databaseDirectory = new File(configuredRoot, databaseDirectoryName);
 		databaseDirectory.mkdirs();
+		LOG.info("RocksDBProvider opening on directory: {}", databaseDirectory.getAbsolutePath());
 
 		//Load RocksDB library
 		RocksDB.loadLibrary();
@@ -91,9 +92,6 @@ public class RocksDBProvider implements PrimitiveDataService, NidGenerator {
 		//Instantiate RocksDB conversion helper class
 		this.convert = new Convert();
 
-		//Find next Nid to be used when writing new components to the database
-		this.nextNid = new AtomicInteger(findLastNid());
-
 		//Create instance of RocksDB
 		try {
 			rocksDB = RocksDB.open(dbOptions, databaseDirectory.getAbsolutePath(), columnFamilyDescriptors, columnFamilyHandler);
@@ -101,6 +99,9 @@ public class RocksDBProvider implements PrimitiveDataService, NidGenerator {
 		} catch (RocksDBException e) {
 			throw new RuntimeException(e);
 		}
+
+		//Find next Nid to be used when writing new components to the database
+		this.nextNid = new AtomicInteger(findLastNid());
 
 		stopwatch.stop();
 		LOG.info("Opened RocksDBProvider in {}", stopwatch.durationString());
@@ -145,7 +146,11 @@ public class RocksDBProvider implements PrimitiveDataService, NidGenerator {
 	}
 
 	public void save() {
-		//Nothing to do here
+		try {
+			indexer.commit();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	private int findLastNid(){
@@ -290,7 +295,9 @@ public class RocksDBProvider implements PrimitiveDataService, NidGenerator {
 		nids.forEach(nid -> {
 			byte[] key = convert.integerToBytes(nid);
 			ColumnFamily columnFamily = getColumnFamilyFromKey(key);
-			iterateWithAction(action, columnFamily);
+			if (columnFamily != null) {
+				iterateWithAction(action, columnFamily);
+			}
 		});
 	}
 
@@ -298,16 +305,18 @@ public class RocksDBProvider implements PrimitiveDataService, NidGenerator {
 	public byte[] getBytes(int nid) {
 		byte[] key = convert.integerToBytes(nid);
 		ColumnFamily columnFamily = getColumnFamilyFromKey(key);
-		byte[] bytes;
-		try {
-			bytes = rocksDB.get(handle(columnFamily), key);
-		} catch (RocksDBException e) {
-			throw new RuntimeException(e);
+		if (columnFamily != null) {
+			try {
+				return rocksDB.get(handle(columnFamily), key);
+			} catch (RocksDBException e) {
+				throw new RuntimeException(e);
+			}
 		}
-		return bytes;
+		return null;
 	}
 
 	private ColumnFamily getColumnFamilyFromKey(byte[] key) {
+		ColumnFamily columnFamily;
 		if (rocksDB.keyExists(handle(ColumnFamily.NID_TO_CONCEPT_MAP), key)) {
 			return ColumnFamily.NID_TO_CONCEPT_MAP;
 		} else if (rocksDB.keyExists(handle(ColumnFamily.NID_TO_SEMANTIC_MAP), key)) {
@@ -316,9 +325,8 @@ public class RocksDBProvider implements PrimitiveDataService, NidGenerator {
 			return ColumnFamily.NID_TO_PATTERN_MAP;
 		} else if (rocksDB.keyExists(handle(ColumnFamily.NID_TO_STAMP_MAP), key)) {
 			return ColumnFamily.NID_TO_STAMP_MAP;
-		} else {
-			throw new IllegalArgumentException("No such nid: " + convert.bytesToInt(key));
 		}
+		return null;
 	}
 
 
@@ -409,7 +417,7 @@ public class RocksDBProvider implements PrimitiveDataService, NidGenerator {
 			} else {
 				bytesToWrite = newEntity;
 			}
-			rocksDB.put(key, bytesToWrite);
+			rocksDB.put(handle(columnFamily), key, bytesToWrite);
 		} catch (RocksDBException e) {
 			throw new RuntimeException(e);
 		}

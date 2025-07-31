@@ -1,12 +1,11 @@
 package dev.ikm.tinkar.provider.rocksdb;
 
 import dev.ikm.tinkar.common.service.DataServiceController;
-import dev.ikm.tinkar.common.service.DataUriOption;
 import dev.ikm.tinkar.common.service.PrimitiveDataService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RocksDBController implements DataServiceController<PrimitiveDataService> {
+public abstract class RocksDBController implements DataServiceController<PrimitiveDataService> {
 
 	private static final Logger LOG = LoggerFactory.getLogger(RocksDBController.class.getSimpleName());
 
@@ -16,47 +15,44 @@ public class RocksDBController implements DataServiceController<PrimitiveDataSer
 	}
 
 	@Override
-	public void setDataUriOption(DataUriOption option) {
-
-	}
-
-	@Override
-	public String controllerName() {
-		return "Open RocksDB";
-	}
-
-	@Override
 	public Class<? extends PrimitiveDataService> serviceClass() {
-		return null;
+		return PrimitiveDataService.class;
 	}
 
 	@Override
 	public boolean running() {
+		if (RocksDBProvider.INSTANCE != null) {
+			return true;
+		}
 		return false;
 	}
 
 	@Override
-	public void start() {
-
-	}
-
-	@Override
 	public void stop() {
-
+		RocksDBProvider.INSTANCE.close();
+		RocksDBProvider.INSTANCE = null;
 	}
 
 	@Override
 	public void save() {
-
+		RocksDBProvider.INSTANCE.save();
 	}
 
 	@Override
 	public void reload() {
-
+		throw new UnsupportedOperationException("Not supported yet.");
 	}
 
 	@Override
 	public PrimitiveDataService provider() {
-		return null;
+		if (RocksDBProvider.INSTANCE == null) {
+			start();
+		}
+		return RocksDBProvider.INSTANCE;
+	}
+
+	@Override
+	public String toString() {
+		return controllerName();
 	}
 }

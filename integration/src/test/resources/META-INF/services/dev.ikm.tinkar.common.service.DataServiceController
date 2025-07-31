@@ -1,2 +1,4 @@
 dev.ikm.tinkar.provider.spinedarray.SpinedArrayOpenController
 dev.ikm.tinkar.provider.spinedarray.SpinedArrayNewController
+dev.ikm.tinkar.provider.rocksdb.RocksDBNewController
+dev.ikm.tinkar.provider.rocksdb.RocksDBOpenController

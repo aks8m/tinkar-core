@@ -18,7 +18,8 @@ package dev.ikm.tinkar.integration.helper;
 public enum DataStore {
     SPINED_ARRAY_STORE("Open SpinedArrayStore"),
     EPHEMERAL_STORE("Load Ephemeral Store"),
-    MV_STORE("Open MV Store");
+    MV_STORE("Open MV Store"),
+    ROCKSDB_STORE("Open RocksDB Store");
 
     final String CONTROLLER_NAME;
 
