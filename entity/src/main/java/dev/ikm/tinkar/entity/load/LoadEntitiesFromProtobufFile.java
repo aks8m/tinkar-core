@@ -90,6 +90,7 @@ public class LoadEntitiesFromProtobufFile extends TrackingCallable<EntityCountSu
         try (ZipInputStream zis = new ZipInputStream(new FileInputStream(importFile))) {
             // Consumer to be run for each transformed Entity
             Consumer<Entity<? extends  EntityVersion>> entityConsumer = entity -> {
+                LOG.info("Loading entity {}", entity.getClass().getSimpleName());
                 EntityService.get().putEntityQuietly(entity, DataActivity.LOADING_CHANGE_SET);
 				updateCounts(entity);
             };

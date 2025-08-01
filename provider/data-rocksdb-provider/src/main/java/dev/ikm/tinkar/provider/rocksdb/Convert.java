@@ -19,6 +19,11 @@ public class Convert {
 		return bb.array();
 	}
 
+	public UUID bytesToUuid(byte[] bytes) {
+		ByteBuffer bb = ByteBuffer.wrap(bytes);
+		return new UUID(bb.getLong(), bb.getLong());
+	}
+
 	public byte[] integerToBytes(int integer) {
 		ByteBuffer bb = ByteBuffer.wrap(new byte[4]);
 		bb.putInt(integer);
